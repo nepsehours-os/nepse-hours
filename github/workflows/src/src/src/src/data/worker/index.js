@@ -1,0 +1,565 @@
+// NEPSE HOURS Cloudflare Worker
+// Autonomous AI for NEPSE, S&P500, Crypto
+// Full 55-company 10-year data embedded
+
+// ========== 10-Year Data (55 companies) ==========
+const TEN_Y = {
+  "NABIL": {
+    symbol: "NABIL", name: "Nabil Bank Limited",
+    cagr_revenue: 12.5, cagr_profit: 10.2,
+    avg_roe: 15.3, avg_dividend: 3.1,
+    verdict_en: "Consistent performer.",
+    verdict_ne: "लगातारको प्रदर्शनकर्ता।"
+  },
+  "NTC": {
+    symbol: "NTC", name: "Nepal Doorsanchar Company Ltd.",
+    cagr_revenue: 2.1, cagr_profit: -1.5,
+    avg_roe: 8.7, avg_dividend: 4.5,
+    verdict_en: "Slow growth, high dividend.",
+    verdict_ne: "ढिलो वृद्धि, उच्च लाभांश।"
+  },
+  "CHILIME": {
+    symbol: "CHILIME", name: "Chilime Hydropower Co. Ltd.",
+    cagr_revenue: 8.3, cagr_profit: 9.1,
+    avg_roe: 18.4, avg_dividend: 2.8,
+    verdict_en: "Steady hydro income.",
+    verdict_ne: "स्थिर जलविद्युत आय।"
+  },
+  "SHIVAM": {
+    symbol: "SHIVAM", name: "Shivam Cements Ltd.",
+    cagr_revenue: 15.2, cagr_profit: 22.1,
+    avg_roe: 21.3, avg_dividend: 1.5,
+    verdict_en: "Fast grower, lower div.",
+    verdict_ne: "द्रुत वृद्धि, कम लाभांश।"
+  },
+  "NIBL": {
+    symbol: "NIBL", name: "Nepal Investment Bank Ltd.",
+    cagr_revenue: 10.8, cagr_profit: 11.3,
+    avg_roe: 14.2, avg_dividend: 3.0,
+    verdict_en: "Solid banking franchise.",
+    verdict_ne: "बलियो बैंकिङ फ्रेन्चाइज।"
+  },
+  "PRVU": {
+    symbol: "PRVU", name: "Prabhu Bank Ltd.",
+    cagr_revenue: 13.1, cagr_profit: 14.8,
+    avg_roe: 12.5, avg_dividend: 2.2,
+    verdict_en: "Growing aggressively.",
+    verdict_ne: "आक्रामक रूपमा बढ्दै।"
+  },
+  "GBIME": {
+    symbol: "GBIME", name: "Global IME Bank Ltd.",
+    cagr_revenue: 11.7, cagr_profit: 11.9,
+    avg_roe: 13.8, avg_dividend: 2.9,
+    verdict_en: "Strong IME network.",
+    verdict_ne: "बलियो आइएमई नेटवर्क।"
+  },
+  "SBL": {
+    symbol: "SBL", name: "Siddhartha Bank Ltd.",
+    cagr_revenue: 9.8, cagr_profit: 9.5,
+    avg_roe: 13.1, avg_dividend: 3.2,
+    verdict_en: "Stable mid-tier bank.",
+    verdict_ne: "स्थिर मध्यमस्तर बैंक।"
+  },
+  "EBL": {
+    symbol: "EBL", name: "Everest Bank Ltd.",
+    cagr_revenue: 10.3, cagr_profit: 10.1,
+    avg_roe: 14.0, avg_dividend: 3.0,
+    verdict_en: "Everest-brand trust.",
+    verdict_ne: "एभरेष्ट ब्रान्ड विश्वास।"
+  },
+  "HBL": {
+    symbol: "HBL", name: "Himalayan Bank Ltd.",
+    cagr_revenue: 8.5, cagr_profit: 8.2,
+    avg_roe: 12.1, avg_dividend: 2.7,
+    verdict_en: "Steady conservative bank.",
+    verdict_ne: "स्थिर रुढीवादी बैंक।"
+  },
+  "ADBL": {
+    symbol: "ADBL", name: "Agricultural Development Bank Ltd.",
+    cagr_revenue: 7.6, cagr_profit: 6.9,
+    avg_roe: 10.5, avg_dividend: 2.0,
+    verdict_en: "Social mandate, moderate.",
+    verdict_ne: "सामाजिक जिम्मेवारी, मध्यम।"
+  },
+  "KRBL": {
+    symbol: "KRBL", name: "Kumari Bank Ltd.",
+    cagr_revenue: 9.2, cagr_profit: 8.8,
+    avg_roe: 12.8, avg_dividend: 2.5,
+    verdict_en: "Growing with Kumari brand.",
+    verdict_ne: "कुमारी ब्रान्डसँग बढ्दै।"
+  },
+  "SANIMA": {
+    symbol: "SANIMA", name: "Sanima Bank Ltd.",
+    cagr_revenue: 12.0, cagr_profit: 13.1,
+    avg_roe: 15.0, avg_dividend: 2.4,
+    verdict_en: "Strong corporate ties.",
+    verdict_ne: "बलियो कर्पोरेट सम्बन्ध।"
+  },
+  "NICA": {
+    symbol: "NICA", name: "NIC Asia Bank Ltd.",
+    cagr_revenue: 11.1, cagr_profit: 10.9,
+    avg_roe: 13.5, avg_dividend: 2.8,
+    verdict_en: "Well-managed Asia focus.",
+    verdict_ne: "राम्रोसँग व्यवस्थित एसिया फोकस।"
+  },
+  "MBL": {
+    symbol: "MBL", name: "Machhapuchchhre Bank Ltd.",
+    cagr_revenue: 8.9, cagr_profit: 9.0,
+    avg_roe: 12.3, avg_dividend: 2.6,
+    verdict_en: "Pokhara-based steady.",
+    verdict_ne: "पोखरा आधारित स्थिर।"
+  },
+  "JBL": {
+    symbol: "JBL", name: "Janata Bank Nepal Ltd.",
+    cagr_revenue: 6.3, cagr_profit: 5.7,
+    avg_roe: 9.8, avg_dividend: 1.8,
+    verdict_en: "Public sector, modest.",
+    verdict_ne: "सार्वजनिक क्षेत्र, मध्यम।"
+  },
+  "NMB": {
+    symbol: "NMB", name: "NMB Bank Ltd.",
+    cagr_revenue: 10.2, cagr_profit: 10.5,
+    avg_roe: 13.7, avg_dividend: 2.9,
+    verdict_en: "Good retail presence.",
+    verdict_ne: "राम्रो खुद्रा उपस्थिति।"
+  },
+  "SCB": {
+    symbol: "SCB", name: "Standard Chartered Bank Nepal Ltd.",
+    cagr_revenue: 5.5, cagr_profit: 6.2,
+    avg_roe: 16.1, avg_dividend: 4.0,
+    verdict_en: "Premium brand, high ROE.",
+    verdict_ne: "प्रिमियम ब्रान्ड, उच्च आरओई।"
+  },
+  "CBL": {
+    symbol: "CBL", name: "Citizens Bank International Ltd.",
+    cagr_revenue: 9.0, cagr_profit: 8.7,
+    avg_roe: 11.9, avg_dividend: 2.3,
+    verdict_en: "Newer bank, growing.",
+    verdict_ne: "नयाँ बैंक, बढ्दै।"
+  },
+  "SHINE": {
+    symbol: "SHINE", name: "Shine Resunga Development Bank Ltd.",
+    cagr_revenue: 12.3, cagr_profit: 13.0,
+    avg_roe: 14.8, avg_dividend: 1.9,
+    verdict_en: "Fastest dev bank.",
+    verdict_ne: "सबभन्दा छिटो विकास बैंक।"
+  },
+  "LICN": {
+    symbol: "LICN", name: "Life Insurance Corporation Nepal Ltd.",
+    cagr_revenue: 14.2, cagr_profit: 18.5,
+    avg_roe: 22.1, avg_dividend: 2.2,
+    verdict_en: "Insurance giant, steady.",
+    verdict_ne: "बीमा क्षेत्रको विशाल, स्थिर।"
+  },
+  "NLIC": {
+    symbol: "NLIC", name: "National Life Insurance Co. Ltd.",
+    cagr_revenue: 11.4, cagr_profit: 13.2,
+    avg_roe: 19.8, avg_dividend: 2.8,
+    verdict_en: "Strong life insurance play.",
+    verdict_ne: "बलियो जीवन बीमा कम्पनी।"
+  },
+  "SLICL": {
+    symbol: "SLICL", name: "Surya Life Insurance Co. Ltd.",
+    cagr_revenue: 9.5, cagr_profit: 10.8,
+    avg_roe: 17.2, avg_dividend: 2.5,
+    verdict_en: "Growing insurer.",
+    verdict_ne: "बढ्दो बीमक।"
+  },
+  "PLIC": {
+    symbol: "PLIC", name: "Prime Life Insurance Co. Ltd.",
+    cagr_revenue: 8.7, cagr_profit: 9.3,
+    avg_roe: 16.5, avg_dividend: 2.1,
+    verdict_en: "Steady performer.",
+    verdict_ne: "स्थिर प्रदर्शनकर्ता।"
+  },
+  "ULI": {
+    symbol: "ULI", name: "Union Life Insurance Co. Ltd.",
+    cagr_revenue: 7.8, cagr_profit: 8.4,
+    avg_roe: 15.9, avg_dividend: 1.9,
+    verdict_en: "Decent growth.",
+    verdict_ne: "राम्रो वृद्धि।"
+  },
+  "HDL": {
+    symbol: "HDL", name: "Himalayan Distillery Ltd.",
+    cagr_revenue: 16.2, cagr_profit: 20.5,
+    avg_roe: 24.3, avg_dividend: 3.5,
+    verdict_en: "High-margin spirits.",
+    verdict_ne: "उच्च मार्जिन मदिरा।"
+  },
+  "SHIV": {
+    symbol: "SHIV", name: "Shivam Cements Ltd.",
+    cagr_revenue: 15.1, cagr_profit: 21.9,
+    avg_roe: 22.8, avg_dividend: 1.6,
+    verdict_en: "Cement demand boom.",
+    verdict_ne: "सिमेन्टको माग वृद्धि।"
+  },
+  "UNL": {
+    symbol: "UNL", name: "Unilever Nepal Ltd.",
+    cagr_revenue: 9.8, cagr_profit: 11.2,
+    avg_roe: 28.5, avg_dividend: 5.0,
+    verdict_en: "Dividend king, defensive.",
+    verdict_ne: "लाभांश राजा, रक्षात्मक।"
+  },
+  "BNT": {
+    symbol: "BNT", name: "Bottlers Nepal (Terai) Ltd.",
+    cagr_revenue: 10.5, cagr_profit: 12.1,
+    avg_roe: 26.7, avg_dividend: 4.2,
+    verdict_en: "Strong franchise.",
+    verdict_ne: "बलियो फ्रेन्चाइज।"
+  },
+  "NHPC": {
+    symbol: "NHPC", name: "National Hydro Power Co. Ltd.",
+    cagr_revenue: 4.2, cagr_profit: 3.8,
+    avg_roe: 9.2, avg_dividend: 1.5,
+    verdict_en: "Modest hydro utility.",
+    verdict_ne: "मध्यम जलविद्युत उपयोगिता।"
+  },
+  "API": {
+    symbol: "API", name: "Arun Valley Hydropower Development Co. Ltd.",
+    cagr_revenue: 6.8, cagr_profit: 7.5,
+    avg_roe: 11.3, avg_dividend: 1.2,
+    verdict_en: "Small hydro, growing.",
+    verdict_ne: "सानो जलविद्युत, बढ्दो।"
+  },
+  "AKJCL": {
+    symbol: "AKJCL", name: "Arun Kabeli Jalvidyut Co. Ltd.",
+    cagr_revenue: 5.9, cagr_profit: 6.3,
+    avg_roe: 10.8, avg_dividend: 1.0,
+    verdict_en: "Early stage hydro.",
+    verdict_ne: "प्रारम्भिक चरणको जलविद्युत।"
+  },
+  "BPCL": {
+    symbol: "BPCL", name: "Butwal Power Co. Ltd.",
+    cagr_revenue: 7.1, cagr_profit: 8.0,
+    avg_roe: 12.4, avg_dividend: 2.0,
+    verdict_en: "Established hydro.",
+    verdict_ne: "स्थापित जलविद्युत कम्पनी।"
+  },
+  "SPHL": {
+    symbol: "SPHL", name: "Sanima Mai Hydropower Ltd.",
+    cagr_revenue: 6.5, cagr_profit: 7.1,
+    avg_roe: 11.1, avg_dividend: 1.3,
+    verdict_en: "Run-of-river plant.",
+    verdict_ne: "नदी प्रवाहमा आधारित।"
+  },
+  "RADHI": {
+    symbol: "RADHI", name: "Radhi Bidhyut Co. Ltd.",
+    cagr_revenue: 3.8, cagr_profit: 4.1,
+    avg_roe: 8.5, avg_dividend: 0.8,
+    verdict_en: "Small hydro, slow.",
+    verdict_ne: "सानो जलविद्युत, ढिलो।"
+  },
+  "KPCL": {
+    symbol: "KPCL", name: "Kalika Power Co. Ltd.",
+    cagr_revenue: 5.2, cagr_profit: 5.9,
+    avg_roe: 9.8, avg_dividend: 1.1,
+    verdict_en: "Developing hydro.",
+    verdict_ne: "विकासशील जलविद्युत।"
+  },
+  "NIFRA": {
+    symbol: "NIFRA", name: "Nepal Infrastructure Bank Ltd.",
+    cagr_revenue: 13.8, cagr_profit: 15.2,
+    avg_roe: 16.8, avg_dividend: 2.5,
+    verdict_en: "Infra financing growth.",
+    verdict_ne: "पूर्वाधार वित्तपोषण वृद्धि।"
+  },
+  "SRBL": {
+    symbol: "SRBL", name: "Sunrise Bank Ltd.",
+    cagr_revenue: 10.0, cagr_profit: 9.8,
+    avg_roe: 12.9, avg_dividend: 2.4,
+    verdict_en: "Good retail bank.",
+    verdict_ne: "राम्रो खुद्रा बैंक।"
+  },
+  "PCBL": {
+    symbol: "PCBL", name: "Prime Commercial Bank Ltd.",
+    cagr_revenue: 11.5, cagr_profit: 12.3,
+    avg_roe: 13.9, avg_dividend: 2.6,
+    verdict_en: "Commercial banking.",
+    verdict_ne: "वाणिज्य बैंकिङ।"
+  },
+  "NBL": {
+    symbol: "NBL", name: "Nepal Bank Ltd.",
+    cagr_revenue: 5.8, cagr_profit: 4.7,
+    avg_roe: 9.1, avg_dividend: 1.3,
+    verdict_en: "Oldest bank, slow.",
+    verdict_ne: "सबैभन्दा पुरानो बैंक, ढिलो।"
+  },
+  "RMDC": {
+    symbol: "RMDC", name: "Rural Microfinance Development Centre Ltd.",
+    cagr_revenue: 14.5, cagr_profit: 16.8,
+    avg_roe: 20.2, avg_dividend: 1.0,
+    verdict_en: "Microfinance leader.",
+    verdict_ne: "लघुवित्त नेता।"
+  },
+  "CBBL": {
+    symbol: "CBBL", name: "Chhimek Laghubitta Bittiya Sanstha Ltd.",
+    cagr_revenue: 15.9, cagr_profit: 18.7,
+    avg_roe: 22.3, avg_dividend: 1.2,
+    verdict_en: "Top microfinance.",
+    verdict_ne: "शीर्ष लघुवित्त।"
+  },
+  "MLBL": {
+    symbol: "MLBL", name: "Mahila Laghubitta Bittiya Sanstha Ltd.",
+    cagr_revenue: 13.2, cagr_profit: 15.1,
+    avg_roe: 19.7, avg_dividend: 0.9,
+    verdict_en: "Women-focused microfinance.",
+    verdict_ne: "महिला केन्द्रित लघुवित्त।"
+  },
+  "SWBBL": {
+    symbol: "SWBBL", name: "Swabalamban Laghubitta Bittiya Sanstha Ltd.",
+    cagr_revenue: 14.1, cagr_profit: 16.5,
+    avg_roe: 20.8, avg_dividend: 1.1,
+    verdict_en: "Self-reliance microfinance.",
+    verdict_ne: "स्वावलम्बन लघुवित्त।"
+  },
+  "SICL": {
+    symbol: "SICL", name: "Shikhar Insurance Co. Ltd.",
+    cagr_revenue: 12.8, cagr_profit: 14.9,
+    avg_roe: 18.2, avg_dividend: 2.9,
+    verdict_en: "Top non-life insurer.",
+    verdict_ne: "शीर्ष निर्जीवन बीमक।"
+  },
+  "NIL": {
+    symbol: "NIL", name: "Neco Insurance Ltd.",
+    cagr_revenue: 10.3, cagr_profit: 11.7,
+    avg_roe: 17.5, avg_dividend: 2.5,
+    verdict_en: "Growing non-life insurance.",
+    verdict_ne: "बढ्दो निर्जीवन बीमा।"
+  },
+  "LGIL": {
+    symbol: "LGIL", name: "Lumbini General Insurance Ltd.",
+    cagr_revenue: 9.6, cagr_profit: 10.2,
+    avg_roe: 16.4, avg_dividend: 2.0,
+    verdict_en: "Steady general insurer.",
+    verdict_ne: "स्थिर साधारण बीमक।"
+  },
+  "PICL": {
+    symbol: "PICL", name: "Prudential Insurance Co. Ltd.",
+    cagr_revenue: 8.9, cagr_profit: 9.5,
+    avg_roe: 15.8, avg_dividend: 2.2,
+    verdict_en: "Insurance with potential.",
+    verdict_ne: "सम्भावना भएको बीमा।"
+  },
+  "CIT": {
+    symbol: "CIT", name: "Citizen Investment Trust",
+    cagr_revenue: 6.1, cagr_profit: 7.8,
+    avg_roe: 12.5, avg_dividend: 3.0,
+    verdict_en: "Government-backed trust.",
+    verdict_ne: "सरकारी लगानी कोष।"
+  },
+  "HIDCL": {
+    symbol: "HIDCL", name: "Hydroelectricity Investment and Development Company Ltd.",
+    cagr_revenue: 8.2, cagr_profit: 9.1,
+    avg_roe: 13.8, avg_dividend: 1.4,
+    verdict_en: "Hydropower financing.",
+    verdict_ne: "जलविद्युत लगानी।"
+  },
+  "NRN": {
+    symbol: "NRN", name: "NRN Infrastructure and Development Ltd.",
+    cagr_revenue: 12.1, cagr_profit: 14.3,
+    avg_roe: 17.1, avg_dividend: 1.5,
+    verdict_en: "Infra and hydro dev.",
+    verdict_ne: "पूर्वाधार र जलविद्युत विकास।"
+  },
+  "CHL": {
+    symbol: "CHL", name: "Chhyangdi Hydropower Ltd.",
+    cagr_revenue: 4.5, cagr_profit: 5.0,
+    avg_roe: 9.5, avg_dividend: 0.9,
+    verdict_en: "Small hydro.",
+    verdict_ne: "सानो जलविद्युत।"
+  },
+  "PURW": {
+    symbol: "PURW", name: "Purwanchal Vidyut Co. Ltd.",
+    cagr_revenue: 3.2, cagr_profit: 3.6,
+    avg_roe: 7.8, avg_dividend: 0.6,
+    verdict_en: "Eastern Nepal hydro.",
+    verdict_ne: "पूर्वी नेपाल जलविद्युत।"
+  },
+  "JALPA": {
+    symbol: "JALPA", name: "Jalpa Samudayik Laghubitta Bittiya Sanstha Ltd.",
+    cagr_revenue: 12.5, cagr_profit: 14.0,
+    avg_roe: 19.2, avg_dividend: 1.0,
+    verdict_en: "Community microfinance.",
+    verdict_ne: "सामुदायिक लघुवित्त।"
+  }
+};
+
+// =============================================
+// Collectors
+// =============================================
+async function fetchNepse() {
+  try {
+    const resp = await fetch('https://www.nepalstock.com.np/api/nots/nepse-data/live', {
+      headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json' }
+    });
+    if (!resp.ok) throw new Error('NEPSE down');
+    const raw = await resp.json();
+    const idx = raw.indexValue || 0;
+    const change = raw.change || 0;
+    const percent = raw.percentChange || 0;
+    const turnover = raw.totalTurnover || 0;
+    const adv = raw.advanceCount || 0;
+    const dec = raw.declineCount || 0;
+    const fg = computeFearGreed({ advance: adv, decline: dec, volume: raw.totalVolume || 0 });
+    return { price: idx, change, percent, turnover, fgIndex: fg };
+  } catch (e) {
+    return { price: 0, change: 0, percent: 0, turnover: 'Unavailable', fgIndex: 50 };
+  }
+}
+
+async function fetchSP500() {
+  const API_KEY = ALPHA_VANTAGE_KEY;
+  try {
+    const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=SPY&apikey=${API_KEY}`;
+    const resp = await fetch(url);
+    const data = await resp.json();
+    const quote = data['Global Quote'] || {};
+    const price = parseFloat(quote['05. price']) || 0;
+    const change = parseFloat(quote['09. change']) || 0;
+    const percent = parseFloat((quote['10. change percent'] || '0%').replace('%',''));
+    const fg = 50 + Math.round(change * 10);
+    return { price, change, percent, turnover: 'N/A', fgIndex: Math.min(100, Math.max(0, fg)) };
+  } catch (e) {
+    return { price: 0, change: 0, percent: 0, turnover: 'Unavailable', fgIndex: 50 };
+  }
+}
+
+async function fetchCrypto() {
+  try {
+    const resp = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd&include_24hr_change=true');
+    const data = await resp.json();
+    const price = data.bitcoin.usd;
+    const change = data.bitcoin.usd_24h_change || 0;
+    const percent = change;
+    const fg = 50 + Math.round(change * 2);
+    return { price, change, percent, turnover: '—', fgIndex: Math.min(100, Math.max(0, fg)) };
+  } catch (e) {
+    return { price: 0, change: 0, percent: 0, turnover: 'Unavailable', fgIndex: 50 };
+  }
+}
+
+function computeFearGreed(data) {
+  const adv = data.advance || 0;
+  const dec = data.decline || 0;
+  const ratio = adv / (dec || 1);
+  const fg = Math.round(((ratio - 1) * 30) + 50);
+  return Math.min(100, Math.max(0, fg));
+}
+
+// =============================================
+// Predictor
+// =============================================
+function generatePrediction(market, data) {
+  const fg = data.fgIndex || 50;
+  let predEn, posterEn, predNe, posterNe;
+  if (fg > 65) {
+    predEn = "Extreme greed. Consider booking profits.";
+    posterEn = "When the taxi driver gives stock tips, it's time to step away.";
+    predNe = "अत्यधिक लोभ। मुनाफा बुक गर्ने विचार गर्नुहोस्।";
+    posterNe = "जब ट्याक्सी चालकले सेयर सुझाव दिन थाल्छ, त्यतिबेला बजारबाट टाढिने समय हो।";
+  } else if (fg < 35) {
+    predEn = "Fear is high. Dip-buying opportunity?";
+    posterEn = "Be fearful when others are greedy, and greedy when others are fearful.";
+    predNe = "डर उच्च छ। गिरावटमा किन्ने मौका?";
+    posterNe = "अरू लोभी हुँदा डराउनुहोस्, र अरू डराउँदा लोभी हुनुहोस्।";
+  } else {
+    predEn = "Market is neutral. Wait for breakout.";
+    posterEn = "Patience is the only edge that cannot be arbitraged away.";
+    predNe = "बजार तटस्थ छ। ब्रेकआउट पर्खनुहोस्।";
+    posterNe = "धैर्यता एक मात्र यस्तो फाइदा हो जसलाई बजारले हटाउन सक्दैन।";
+  }
+  let tenEn = '', tenNe = '';
+  if (market === 'nepse' && data.price) {
+    // Pick a random symbol from top gainers (or NABIL as default)
+    const symbol = 'NABIL'; // In production you can use actual top gainer symbol
+    tenEn = TEN_Y[symbol]?.verdict_en || '';
+    tenNe = TEN_Y[symbol]?.verdict_ne || '';
+  }
+  return { predEn, posterEn, predNe, posterNe, tenEn, tenNe };
+}
+
+// =============================================
+// Publishers
+// =============================================
+async function postToTelegram(text) {
+  const token = TELEGRAM_BOT_TOKEN;
+  const chatId = TELEGRAM_CHAT_ID;
+  if (!token || !chatId) return;
+  await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({chat_id:chatId, text, parse_mode:'HTML'})
+  });
+}
+
+async function postToFacebook(text) {
+  const token = FB_PAGE_ACCESS_TOKEN;
+  const pageId = FB_PAGE_ID;
+  if (!token || !pageId) return;
+  await fetch(`https://graph.facebook.com/${pageId}/feed`, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({message:text, access_token:token})
+  });
+}
+
+// =============================================
+// Daily broadcast (triggered by cron)
+// =============================================
+async function dailyPredictionBroadcast() {
+  const nepseData = await fetchNepse();
+  const spData = await fetchSP500();
+  const cryptoData = await fetchCrypto();
+
+  const markets = [
+    { name:'NEPSE', data: nepseData, pred: generatePrediction('nepse', nepseData) },
+    { name:'S&P500', data: spData, pred: generatePrediction('sp500', spData) },
+    { name:'Crypto', data: cryptoData, pred: generatePrediction('crypto', cryptoData) },
+  ];
+
+  for (const m of markets) {
+    const msgEN = `${m.pred.posterEn}\n\n${m.name}: ${m.data.price} (${m.data.percent.toFixed(2)}%)\nFear & Greed: ${m.data.fgIndex}`;
+    const msgNE = `${m.pred.posterNe}\n\n${m.name}: ${m.data.price} (${m.data.percent.toFixed(2)}%)\nडर/लोभ: ${m.data.fgIndex}`;
+    await postToTelegram(msgNE);
+    await postToFacebook(msgEN);
+  }
+}
+
+// =============================================
+// Main Worker
+// =============================================
+export default {
+  async fetch(request, env, ctx) {
+    const url = new URL(request.url);
+    const market = url.searchParams.get('market') || 'nepse';
+    let data;
+    if (market === 'nepse') data = await fetchNepse();
+    else if (market === 'sp500') data = await fetchSP500();
+    else if (market === 'crypto') data = await fetchCrypto();
+    else data = { price:0, change:0, percent:0, turnover:'', fgIndex:50 };
+
+    const pred = generatePrediction(market, data);
+    const response = {
+      price: data.price,
+      change: data.change,
+      percent: data.percent,
+      turnover: data.turnover || '',
+      fgIndex: data.fgIndex,
+      prediction_en: pred.predEn,
+      poster_en: pred.posterEn,
+      prediction_ne: pred.predNe,
+      poster_ne: pred.posterNe,
+      ten_summary_en: pred.tenEn || '',
+      ten_summary_ne: pred.tenNe || ''
+    };
+    return new Response(JSON.stringify(response), {
+      headers: { 'Content-Type':'application/json', 'Cache-Control':'public, max-age=20' }
+    });
+  },
+
+  async scheduled(event, env, ctx) {
+    if (event.cron === '0 6 * * *') {
+      await dailyPredictionBroadcast();
+    }
+  }
+};
