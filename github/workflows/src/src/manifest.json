@@ -1,0 +1,22 @@
+{
+  "name": "NEPSE HOURS – Global Market AI",
+  "short_name": "NEPSE HOURS",
+  "start_url": "/?utm_source=homescreen",
+  "display": "standalone",
+  "background_color": "#0A0A0B",
+  "theme_color": "#0A0A0B",
+  "description": "Autonomous AI for NEPSE, S&P500, and crypto. Fastest on 2G.",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "lang": "en"
+}
